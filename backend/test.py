@@ -1,9 +1,5 @@
-import tensorflow as tf
+MODEL_DIRECTORY = "/backend/app/models/"
+SCALER_DIRECTORY = "/backend/app/scalers/"
 
-model_path = "C:\\Users\\User\\ML Predictor\\backend\\app\\trained_model\\random_model"
-
-try:
-    model = tf.keras.models.load_model(model_path)
-    print("Model loaded successfully!")
-except Exception as e:
-    print("Error loading model:", e)
+os.makedirs(MODEL_DIRECTORY, exist_ok=True)
+os.makedirs(SCALER_DIRECTORY, exist_ok=True)
