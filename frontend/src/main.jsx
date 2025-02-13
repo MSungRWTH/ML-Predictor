@@ -1,10 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import PredictionForm from './App.jsx'
+import ModelManager from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <PredictionForm />
+    <ModelManager/>
   </StrictMode>,
 )

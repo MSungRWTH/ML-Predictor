@@ -1,14 +1,22 @@
 from typing import Dict, List, Any
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import tensorflow as tf
+import autokeras as ak  # Required for imported AutoKeras custom layers
 import numpy as np
 import os
 import shutil
 import joblib
+import pickle
 import pandas as pd
 import json
+# from tensorflow.keras.models import load_model # changes depending on Tensorflow version
+from tensorflow import keras
+from keras.layers import Dense
+from keras.models import Sequential, load_model
+from sklearn.preprocessing import MinMaxScaler
+
 
 app = FastAPI()
 
@@ -21,6 +29,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Defining Schema
+class LoadModelRequest(BaseModel):
+    model_name: str
+
+
 
 MODEL_DIRECTORY = "./app/models/"
 SCALER_DIRECTORY = "./app/scalers/"
@@ -66,26 +80,55 @@ async def upload_model(file: UploadFile = File(...)):
     return {"message": "Model uploaded successfully", "model_name": model_name}
 
 @app.post("/load_model")
-def load_model_api(model_name: str):
-    """Load a model and its scalers dynamically."""
+def load_model_api(data: LoadModelRequest):  
+    print(f"Received model_name: {data.model_name}")  # Debugging
+
+    model_name = data.model_name  
+    if not model_name:
+        raise HTTPException(status_code=400, detail="Model name is required.")
+
     model_path = os.path.join(MODEL_DIRECTORY, model_name)
+    # test scaler
     scaler_x_path = os.path.join(SCALER_DIRECTORY, model_name, "scaler_X.pkl")
     scaler_y_path = os.path.join(SCALER_DIRECTORY, model_name, "scaler_y.pkl")
-
+    
     if not os.path.exists(model_path):
         return {"error": "Model not found"}
 
     try:
-        model = tf.saved_model.load(model_path)
+        model = load_model(model_path, custom_objects=ak.CUSTOM_OBJECTS)
         scaler_X = joblib.load(scaler_x_path)
         scaler_Y = joblib.load(scaler_y_path)
-
+        
         loaded_models[model_name] = model
         loaded_scalers[model_name] = {"scaler_X": scaler_X, "scaler_Y": scaler_Y}
 
-        return {"message": f"Model {model_name} loaded successfully!"}
+        return {"message": f"Model {model_name} + Scalers loaded successfully!"}
     except Exception as e:
         return {"error": f"Failed to load model: {str(e)}"}
+
+# @app.post("/load_model")
+# def load_model_api(model_name: str = Form(...)):
+#     """Load a model and its scalers dynamically."""
+#     model_path = os.path.join(MODEL_DIRECTORY, model_name)
+#     scaler_x_path = os.path.join(SCALER_DIRECTORY, model_name, "scaler_X.pkl")
+#     scaler_y_path = os.path.join(SCALER_DIRECTORY, model_name, "scaler_y.pkl")
+
+#     if not os.path.exists(model_path):
+#         return {"error": "Model not found"}
+
+#     try:
+#         # model = tf.saved_model.load(model_path)
+#         model = load_model(model_path, custom_objects=ak.CUSTOM_OBJECTS)
+#         scaler_X = joblib.load(scaler_x_path)
+#         scaler_Y = joblib.load(scaler_y_path)
+
+#         loaded_models[model_name] = model
+#         loaded_scalers[model_name] = {"scaler_X": scaler_X, "scaler_Y": scaler_Y}
+
+#         return {"message": f"Model {model_name} loaded successfully!"}
+#     except Exception as e:
+#         return {"error": f"Failed to load model: {str(e)}"}
 
 class DynamicInputData(BaseModel):
     model_name: str
@@ -96,6 +139,8 @@ class DynamicInputData(BaseModel):
 @app.post("/predict")
 def predict(data: DynamicInputData):
     """Make a prediction using a dynamically loaded model with defined input/output parameters."""
+    print(f"Received Prediction Request: {data}")  # Debugging
+
     model_name = data.model_name
     input_params = data.input_params
     output_params = data.output_params
@@ -111,13 +156,16 @@ def predict(data: DynamicInputData):
 
     try:
         # Prepare input data dynamically
-        input_values = np.array([[data.input_data[param] for param in input_params]])
+        input_values = np.array([[data.input_data.get(param, 0) for param in input_params]])
+        print(f"Input values: {input_values}")  # Debugging
 
         input_df = pd.DataFrame(input_values, columns=input_params)
         input_scaled = scaler_X.transform(input_df)
 
         raw_prediction = model(input_scaled)
         raw_prediction = raw_prediction.numpy()
+
+        print(f"Raw model output: {raw_prediction}")  # Debugging
 
         # Inverse scale and format output dynamically
         if scaler_Y:
@@ -126,11 +174,14 @@ def predict(data: DynamicInputData):
             prediction_scaled = raw_prediction.tolist()[0]
 
         result = {output_params[i]: prediction_scaled[i] for i in range(len(output_params))}
+        print(f"Final Prediction Result: {result}")  # Debugging
 
         return {"prediction": result}
 
     except Exception as e:
+        print(f"Prediction Error: {str(e)}")  # Debugging
         return {"error": str(e)}
+
 
 
 

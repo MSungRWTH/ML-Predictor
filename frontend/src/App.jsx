@@ -14,10 +14,17 @@ const ModelManager = () => {
     const [file, setFile] = useState(null);
 
     // Fetch available models
+    const fetchModels = async () => {
+        try {
+            const res = await axios.get(`${API_BASE_URL}/models`);
+            setModels(res.data.models);
+        } catch (err) {
+            console.error("Error fetching models:", err);
+        }
+    };
+
     useEffect(() => {
-        axios.get(`${API_BASE_URL}/models`)
-            .then(res => setModels(res.data.models))
-            .catch(err => console.error("Error fetching models:", err));
+        fetchModels();
     }, []);
 
     // Upload a new model
@@ -34,7 +41,7 @@ const ModelManager = () => {
                 headers: { "Content-Type": "multipart/form-data" },
             });
             alert(res.data.message);
-            setModels([...models, res.data.model_name]); // Update model list
+            fetchModels(); // Refresh models list after upload
         } catch (error) {
             console.error("Error uploading model:", error);
         }
@@ -46,12 +53,18 @@ const ModelManager = () => {
             alert("Please select a model.");
             return;
         }
-
+    
+        console.log("Sending model_name:", selectedModel); // Debugging
+    
         try {
-            const res = await axios.post(`${API_BASE_URL}/load_model`, { model_name: selectedModel });
+            const res = await axios.post(`${API_BASE_URL}/load_model`, {
+                model_name: selectedModel,
+            }, {
+                headers: { "Content-Type": "application/json" },
+            });
             alert(res.data.message);
         } catch (error) {
-            console.error("Error loading model:", error);
+            console.error("Error loading model:", error.response?.data || error.message);
         }
     };
 
@@ -99,7 +112,11 @@ const ModelManager = () => {
             {/* Model Selection */}
             <div className="section">
                 <h3>Select Model</h3>
-                <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="select">
+                <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="select"
+                >
                     <option value="">-- Select a model --</option>
                     {models.map((model, idx) => (
                         <option key={idx} value={model}>{model}</option>
@@ -113,18 +130,24 @@ const ModelManager = () => {
             {/* Input Parameter Definition */}
             <div className="section">
                 <h3>Define Input Parameters</h3>
-                <input type="text" placeholder="Comma-separated inputs (e.g., AmountServer,Coolingdefect)"
+                <input
+                    type="text"
+                    placeholder="Comma-separated inputs (e.g., AmountServer,Coolingdefect)"
                     className="input"
-                    onBlur={(e) => setInputParams(e.target.value.split(",").map(p => p.trim()))}
+                    value={inputParams.join(", ")}
+                    onChange={(e) => setInputParams(e.target.value.split(",").map(p => p.trim()))}
                 />
             </div>
 
             {/* Output Parameter Definition */}
             <div className="section">
                 <h3>Define Output Parameters</h3>
-                <input type="text" placeholder="Comma-separated outputs (e.g., Throughput,OEE)"
+                <input
+                    type="text"
+                    placeholder="Comma-separated outputs (e.g., Throughput,OEE)"
                     className="input"
-                    onBlur={(e) => setOutputParams(e.target.value.split(",").map(p => p.trim()))}
+                    value={outputParams.join(", ")}
+                    onChange={(e) => setOutputParams(e.target.value.split(",").map(p => p.trim()))}
                 />
             </div>
 
@@ -134,7 +157,9 @@ const ModelManager = () => {
                 {inputParams.map((param, idx) => (
                     <div key={idx} className="input-group">
                         <label>{param}</label>
-                        <input type="number" placeholder={`Enter ${param}`}
+                        <input
+                            type="number"
+                            placeholder={`Enter ${param}`}
                             className="input"
                             onChange={(e) => handleInputChange(param, e.target.value)}
                         />
