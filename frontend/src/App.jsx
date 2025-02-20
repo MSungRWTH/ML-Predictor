@@ -1,7 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import ModelManager from "./components/home.jsx";
-import ModelTraining from "./components/trainmodel.jsx";
+import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
+import Predict from "./components/Predict.jsx";
+import Train from "./components/Train.jsx";
+import Upload from "./components/Upload.jsx";
 
+// A placeholder for the default route, you can replace it with your actual content
 const AnotherPage = () => <div className="p-4">This is Another Page</div>;
 
 function App() {
@@ -13,10 +15,34 @@ function App() {
           <h1 className="text-xl font-bold mb-4">Dashboard</h1>
           <ul className="space-y-2">
             <li>
-              <Link to="/" className="block p-2 hover:bg-gray-700 rounded">Home</Link>
+              <NavLink
+                to="/predict"
+                className={({ isActive }) => 
+                  `block p-2 hover:bg-gray-700 rounded ${isActive ? 'bg-gray-700' : ''}`
+                }
+              >
+                Prediction
+              </NavLink>
             </li>
             <li>
-              <Link to="/trainmodel" className="block p-2 hover:bg-gray-700 rounded">Training</Link>
+              <NavLink
+                to="/upload"
+                className={({ isActive }) => 
+                  `block p-2 hover:bg-gray-700 rounded ${isActive ? 'bg-gray-700' : ''}`
+                }
+              >
+                Upload Training Data
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/train"
+                className={({ isActive }) => 
+                  `block p-2 hover:bg-gray-700 rounded ${isActive ? 'bg-gray-700' : ''}`
+                }
+              >
+                Preprocessing & Training
+              </NavLink>
             </li>
           </ul>
         </nav>
@@ -24,8 +50,10 @@ function App() {
         {/* Main Content */}
         <div className="flex-1 bg-gray-100 p-4 overflow-auto">
           <Routes>
-            <Route path="/" element={<ModelManager />} />
-            <Route path="/trainmodel" element={<ModelTraining />} />
+            <Route path="/" element={<AnotherPage />} />
+            <Route path="/predict" element={<Predict />} />
+            <Route path="/train" element={<Train />} />
+            <Route path="/upload" element={<Upload />} />
           </Routes>
         </div>
       </div>
