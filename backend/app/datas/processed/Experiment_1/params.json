@@ -1,0 +1,21 @@
+{
+    "input_params": [
+      "AmountServer",
+      "CoolingDefect",
+      "InterarrivalTime [s]",
+      "DefekteModulanzahl"
+    ],
+    "output_params": [
+      "AverageServerUtilisation",
+      "AverageFlowTime [s]",
+      "OEE",
+      "TotalAverageQueueLength",
+      "ProcessingTimeAverage [s]",
+      "WaitingTimeAverage [s]",
+      "MovingTimeAverage [s]",
+      "FailedTimeAverage [s]",
+      "BlockedTimeAverage [s]",
+      "Throughput"
+    ]
+}
+  

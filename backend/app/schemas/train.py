@@ -1,6 +1,18 @@
 from pydantic import BaseModel
 from typing import List
 
+class PreprocessRequest(BaseModel):
+    file_name: str  # Name of the selected dataset
+    input_params: List[str]  # List of selected input columns
+    output_params: List[str]  # List of selected output columns
+    scaler_type: str  # Type of scaler ('StandardScaler' or 'MinMaxScaler')
+
+class PreprocessResponse(BaseModel):
+    message: str  # Success message
+    processed_data_preview: dict  # Sample of preprocessed data (for verification)
+
+class DatasetColumnsRequest(BaseModel):
+    dataset_name: str
 class TrainRequest(BaseModel):
     """
     Schema for the model training request.
