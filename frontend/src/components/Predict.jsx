@@ -1,220 +1,142 @@
 import React, { useState, useEffect } from "react";
-
-// Static data for testing purposes
-const models = ["Experiment_1", "Experiment_2", "Experiment_3"];
-const inputParams = ["AmountServer", "CoolingDefect", "InterarrivalTime", "DefekteModulanzahl"];
-const outputParams = [
-    "AverageServerUtilisation",
-    "AverageFlowTime",
-    "OEE",
-    "TotalAverageQueueLength",
-    "ProcessingTimeAverage",
-    "WaitingTimeAverage",
-    "MovingTimeAverage",
-    "FailedTimeAverage",
-    "BlockedTimeAverage",
-    "Throughput"
-];
-
-const staticPrediction = {
-    prediction: [0.89, 45898.48, 0.89, 0.51, 21265.73, 21773.21, 183.75, 0, 2192.59, 10.88], // example prediction output
-};
+import axios from "axios";
 
 const Predict = () => {
-    const [selectedModel, setSelectedModel] = useState("");
-    const [inputData, setInputData] = useState({});
-    const [prediction, setPrediction] = useState(null);
+  const [models, setModels] = useState([]);
+  const [processedFiles, setProcessedFiles] = useState([]);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
+  const [inputParams, setInputParams] = useState([]);
+  const [outputParams, setOutputParams] = useState([]);
+  const [inputValues, setInputValues] = useState({});
+  const [predictions, setPredictions] = useState({});
+  const [error, setError] = useState("");
 
-    // Simulate the prediction logic (hardcoded for appearance)
-    const handlePredict = () => {
-        // Here we would normally call an API to make the prediction
-        // For testing, we are using static data
-        setPrediction(staticPrediction.prediction);
-    };
+  useEffect(() => {
+    axios
+      .get("http://localhost:8000/predict/models")
+      .then((res) => setModels(res.data.models || []))
+      .catch((err) => setError("Failed to load models."));
+  }, []);
 
-    const handleInputChange = (e, param) => {
-        setInputData((prevData) => ({
-            ...prevData,
-            [param]: e.target.value,
-        }));
-    };
+  useEffect(() => {
+    axios
+      .get("http://localhost:8000/predict/predict/processed-files/")
+      .then((res) => setProcessedFiles(res.data.files || []))
+      .catch((err) => setError("Failed to load processed data."));
+  }, []);
 
-    return (
-        <div>
-            <h2>Make Prediction</h2>
+  useEffect(() => {
+    if (selectedProject) {
+      axios
+        .get(`http://localhost:8000/predict/params/${selectedProject}`)
+        .then((res) => {
+          setInputParams(res.data.input_params || []);
+          setOutputParams(res.data.output_params || []);
+        })
+        .catch((err) => setError("Failed to load model parameters."));
+    }
+  }, [selectedProject]);
 
-            {/* Model Selection Dropdown */}
-            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
-                <option value="">Select Model</option>
-                {models.map((model, index) => (
-                    <option key={index} value={model}>
-                        {model}
-                    </option>
-                ))}
-            </select>
+  const handleInputChange = (param, value) => {
+    // Ensure the value is treated as a number (including zero)
+    const numericValue = value === "" ? "" : parseFloat(value) || 0;
+    setInputValues({ ...inputValues, [param]: numericValue });
+  };
 
-            {/* Input Fields for Parameters */}
-            {inputParams.length > 0 ? (
-                inputParams.map((param, index) => (
-                    <div key={index}>
-                        <label>{param}</label>
-                        <input
-                            type="text"
-                            placeholder={param}
-                            value={inputData[param] || ""}
-                            onChange={(e) => handleInputChange(e, param)}
-                        />
-                    </div>
-                ))
-            ) : (
-                <div>No input parameters available</div>
-            )}
+  const handlePredict = () => {
+    if (!selectedModel || !selectedProject) {
+      alert("Please select a model and a processed project.");
+      return;
+    }
 
-            {/* Button to Trigger Prediction */}
-            <button onClick={handlePredict}>Predict</button>
+    axios
+      .post("http://localhost:8000/predict/predict/", {
+        model_name: selectedModel,
+        project_name: selectedProject,
+        input_data: inputValues,
+      })
+      .then((res) => setPredictions(res.data.predictions || {}))
+      .catch((err) => setError("Failed to get predictions."));
+  };
 
-            {/* Display Output Params */}
-            {outputParams.length > 0 && prediction && (
-                <div>
-                    <h3>Prediction Results</h3>
-                    {outputParams.map((param, index) => (
-                        <div key={index}>
-                            <strong>{param}: </strong>
-                            {prediction[index]}
-                        </div>
-                    ))}
-                </div>
-            )}
+  return (
+    <div className="container mx-auto p-6 bg-gray-50 rounded-lg shadow-md">
+      <h2 className="text-3xl font-semibold text-center mb-6">Predict</h2>
+
+      {error && <p className="text-red-500">{error}</p>}
+
+      {/* Model selection */}
+      <div className="mb-6">
+        <label className="block text-lg font-medium mb-2">Select Model</label>
+        <select
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value)}
+          className="block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          <option value="">Select a model</option>
+          {models.map((model) => (
+            <option key={model} value={model}>
+              {model}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Processed data selection */}
+      <div className="mb-6">
+        <label className="block text-lg font-medium mb-2">Select Processed Data</label>
+        <select
+          value={selectedProject}
+          onChange={(e) => setSelectedProject(e.target.value)}
+          className="block w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          <option value="">Select processed data</option>
+          {processedFiles.map((project) => (
+            <option key={project} value={project}>
+              {project}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Input parameters section */}
+      {inputParams.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-4">Enter Input Values</h3>
+          {inputParams.map((param) => (
+            <div key={param} className="mb-4">
+              <label className="block text-lg font-medium">{param}: </label>
+              <input
+                type="number"
+                value={inputValues[param] !== undefined ? inputValues[param] : ""}
+                onChange={(e) => handleInputChange(param, e.target.value)}
+                className="w-full px-4 py-2 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          ))}
+          <button
+            onClick={handlePredict}
+            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 focus:outline-none"
+          >
+            Predict
+          </button>
         </div>
-    );
+      )}
+
+      {/* Predictions section */}
+      {Object.keys(predictions).length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold mb-4">Predictions</h3>
+          {outputParams.map((param) => (
+            <p key={param} className="text-lg">
+              {param}: {predictions[param]?.toFixed(4)}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Predict;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect } from "react";
-// import { makePrediction } from "../api.js";
-
-// const Predict = () => {
-//     const [models, setModels] = useState([]);
-//     const [selectedModel, setSelectedModel] = useState("");
-//     const [inputData, setInputData] = useState({});
-//     const [prediction, setPrediction] = useState(null);
-//     const [inputParams, setInputParams] = useState([]);
-
-//     useEffect(() => {
-//         const fetchModels = async () => {
-//             try {
-//                 const response = await fetch("http://127.0.0.1:8000/predict/models");
-//                 const result = await response.json();
-//                 setModels(result.models);
-//             } catch (error) {
-//                 console.error("Error fetching models:", error);
-//             }
-//         };
-
-//         fetchModels();
-//     }, []);
-
-//     useEffect(() => {
-//         const fetchModelParams = async () => {
-//             if (selectedModel) {
-//                 try {
-//                     const response = await fetch(`http://127.0.0.1:8000/predict/params/${selectedModel}`);
-//                     const result = await response.json();
-//                     setInputParams(result.input_params || []); // Ensure inputParams is always an array
-//                 } catch (error) {
-//                     console.error("Error fetching model parameters:", error);
-//                     setInputParams([]); // Reset to empty array if error occurs
-//                 }
-//             }
-//         };
-
-//         fetchModelParams();
-//     }, [selectedModel]);
-
-//     const handlePredict = async () => {
-//         const data = {
-//             project_name: selectedModel,
-//             input_data: inputData,
-//         };
-//         try {
-//             const res = await makePrediction(data);
-//             setPrediction(res.data.prediction);
-//         } catch (error) {
-//             console.error("Error making prediction:", error);
-//         }
-//     };
-
-//     const handleInputChange = (e, param) => {
-//         setInputData((prevData) => ({
-//             ...prevData,
-//             [param]: e.target.value,
-//         }));
-//     };
-
-//     return (
-//         <div>
-//             <h2>Make Prediction</h2>
-
-//             <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
-//                 <option value="">Select Model</option>
-//                 {models.length > 0 ? (
-//                     models.map((model, index) => (
-//                         <option key={index} value={model}>
-//                             {model}
-//                         </option>
-//                     ))
-//                 ) : (
-//                     <option value="">No models available</option>
-//                 )}
-//             </select>
-
-//             {Array.isArray(inputParams) && inputParams.length > 0 ? (
-//                 inputParams.map((param, index) => (
-//                     <div key={index}>
-//                         <label>{param}</label>
-//                         <input
-//                             type="text"
-//                             placeholder={param}
-//                             value={inputData[param] || ""}
-//                             onChange={(e) => handleInputChange(e, param)}
-//                         />
-//                     </div>
-//                 ))
-//             ) : (
-//                 <div>No input parameters available</div>
-//             )}
-
-//             <button onClick={handlePredict}>Predict</button>
-
-//             {prediction && <pre>{JSON.stringify(prediction, null, 2)}</pre>}
-//         </div>
-//     );
-// };
-
-// export default Predict;

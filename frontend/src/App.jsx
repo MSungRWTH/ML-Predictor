@@ -31,7 +31,7 @@ function App() {
                   `block p-2 hover:bg-gray-700 rounded ${isActive ? 'bg-gray-700' : ''}`
                 }
               >
-                Upload Training Data
+                Upload Data & Preprocessing
               </NavLink>
             </li>
             <li>
@@ -41,7 +41,7 @@ function App() {
                   `block p-2 hover:bg-gray-700 rounded ${isActive ? 'bg-gray-700' : ''}`
                 }
               >
-                Preprocessing & Training
+                Training Model & Postprocessing
               </NavLink>
             </li>
           </ul>
