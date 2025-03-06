@@ -1,0 +1,1 @@
+{"input_params": ["AmountServer", "Coolingdefect", "InterarrivalTime", "defekteModulanzahl"], "output_params": ["AverageServerUtilisation", "AverageFlowTime", "OEE", "TotalAverageQueueLength", "ProcessingTimeAverage", "WaitingTimeAverage", "MovingTimeAverage", "FailedTimeAverage", "BlockedTimeAverage", "Throughput", "CFP [kgC02/kWh]"], "file_name": "modified4800.json"}
