@@ -45,11 +45,13 @@ packaging==24.2
 pandas==2.2.3
 pillow==11.1.0
 protobuf==3.19.6
+pyarrow==19.0.0
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pydantic==2.10.6
 pydantic_core==2.27.2
 Pygments==2.19.1
+pylance==0.23.0
 pyparsing==3.2.1
 python-dateutil==2.9.0.post0
 python-multipart==0.0.20

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-do
 import Predict from "./components/Predict.jsx";
 import Train from "./components/Train.jsx";
 import Upload from "./components/Upload.jsx";
+import Visualize from "./components/Visualize.jsx";
 
 // A placeholder for the default route, you can replace it with your actual content
 const AnotherPage = () => <div className="p-4">This is Another Page</div>;
@@ -44,6 +45,16 @@ function App() {
                 Training Model & Postprocessing
               </NavLink>
             </li>
+            <li>
+              <NavLink
+                to="/visualize"
+                className={({ isActive }) => 
+                  `block p-2 hover:bg-gray-700 rounded ${isActive ? 'bg-gray-700' : ''}`
+                }
+              >
+                Data Visualization
+              </NavLink>
+            </li>
           </ul>
         </nav>
 
@@ -54,6 +65,8 @@ function App() {
             <Route path="/predict" element={<Predict />} />
             <Route path="/train" element={<Train />} />
             <Route path="/upload" element={<Upload />} />
+            <Route path="/visualize" element={<Visualize />} />
+
           </Routes>
         </div>
       </div>

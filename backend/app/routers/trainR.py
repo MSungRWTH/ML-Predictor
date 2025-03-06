@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def train_model(tuner_type, request, project_path, train_data_file, scaler_x_file, scaler_y_file):
     """Function to train the model for a given tuner type."""
     try:
-        model_path = os.path.join(MODEL_DIRECTORY, request.project_name)
+        model_path = os.path.join(MODEL_DIRECTORY, f"{request.project_name}_{request.tuner}")
         os.makedirs(model_path, exist_ok=True)
         
         regressor = AutoMLRegressor(
@@ -74,7 +74,7 @@ def get_params(project_name: str):
 def start_training(request: TrainRequest):
     """Start training for the selected project."""
     project_path = os.path.join(PROCESSED_DIRECTORY, request.project_name)
-    model_path = os.path.join(MODEL_DIRECTORY, request.project_name)
+    model_path = os.path.join(MODEL_DIRECTORY, f"{request.project_name}_{request.tuner}")
     params_file = os.path.join(project_path, "params.json")
     train_data_file = os.path.join(project_path, "train_data.npz")
     scaler_x_file = os.path.join(project_path, "scaler_X.pkl")

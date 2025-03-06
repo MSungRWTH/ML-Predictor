@@ -132,7 +132,7 @@ function Train() {
           onClick={handleTrainModel}
           disabled={loading}
         >
-          {loading ? "Training..." : "Start Training"}
+          {loading ? "Training..." : "Start Training & Postprocessing"}
         </button>
       </div>
 

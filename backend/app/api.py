@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import uploadR
-from app.routers import predictR, trainR
+from app.routers import predictR, trainR, uploadR, visualR
 
 # Initializes the FastAPI app and includes all routers.
 
@@ -20,6 +19,7 @@ app.add_middleware(
 app.include_router(uploadR.router, prefix="/upload", tags=["upload"])
 app.include_router(trainR.router, prefix="/train", tags=["train"])
 app.include_router(predictR.router, prefix="/predict", tags=["predict"])
+app.include_router(visualR.router, prefix="/visualize", tags=["visualize"])
 
 @app.get("/")
 def read_root():

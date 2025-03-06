@@ -1,0 +1,1 @@
+{"input_params": ["AmountServer", "Coolingdefect", "defekteModulanzahl", "InterarrivalTime"], "output_params": ["OEE", "Throughput", "AverageServerUtilisation", "AverageFlowTime", "ProcessingTimeAverage", "WaitingTimeAverage", "MovingTimeAverage", "FailedTimeAverage", "BlockedTimeAverage", "TotalAverageQueueLength"], "file_name": "scenario_analysis_result_MAN_Test_hl.json"}

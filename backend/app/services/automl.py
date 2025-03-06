@@ -31,9 +31,9 @@ class AutoMLRegressor:
         self.project_name = project_name
         self.models = {}
 
-        # Define project directories under PROCESSED_DIRECTORY
+        # Define project directories under PROCESSED_DIRECTORY, MODEL_DIRECTORY
         self.project_dir = os.path.join(PROCESSED_DIRECTORY, project_name)
-        self.model_dir = os.path.join(MODEL_DIRECTORY, project_name)
+        self.model_dir = os.path.join(MODEL_DIRECTORY)
 
         # Ensure the directories exist
         os.makedirs(self.project_dir, exist_ok=True)
@@ -75,7 +75,8 @@ class AutoMLRegressor:
 
         # Initialize the AutoKeras StructuredDataRegressor with the specified tuner
         regressor = ak.StructuredDataRegressor(
-            project_name=f'{self.project_name}_{tuner_type}',  # Create a project folder based on tuner type
+            project_name=f'{self.project_name}_{tuner_type}', # Create a project folder based on tuner type
+            directory=self.model_dir, # Save the trained model under model directory
             tuner=tuner_type,
             max_trials=100,  # Maximum number of trials for AutoML
             overwrite=True,
@@ -88,16 +89,12 @@ class AutoMLRegressor:
         regressor.fit(self.X_train, self.y_train, epochs=100, validation_split=0.1)  # Train with 100 epochs
         end_time = time.time()
 
-        # Save the trained model under the model directory
-        model_save_path = os.path.join(self.model_dir, f'{tuner_type}_best_model')
-        regressor.export_model().save(model_save_path)
-
         # Store the trained model and log the training time
         self.models[tuner_type] = regressor
         training_time = end_time - start_time
 
         # Save the training time to a JSON file
-        training_time_path = os.path.join(self.model_dir, f'{tuner_type}_training_time.json')
+        training_time_path = os.path.join(self.model_dir, f'{self.project_name}_{tuner_type}', 'training_time.json')
         with open(training_time_path, 'w') as f:
             json.dump({'training_time': training_time}, f)
 
@@ -116,7 +113,7 @@ class AutoMLRegressor:
         print(f"Loading best model for tuner: {tuner_type}")
 
         # Load the best model from the project folder
-        best_model = load_model(os.path.join(self.model_dir, f'{tuner_type}_best_model'))
+        best_model = load_model(os.path.join(self.model_dir, f'{self.project_name}_{tuner_type}','best_model'))
         predictions = best_model.predict(X_test)
 
         # Inverse transform the predictions and actual values to the original scale
