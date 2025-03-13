@@ -36,10 +36,14 @@ def list_datasets():
 def get_columns(file_name: str):
     file_path = os.path.join(UPLOAD_DIRECTORY, file_name)
     
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found.")
+    # Check if it's a CSV and set the correct delimiter
+    if file_name.endswith(".csv"):
+        df = pd.read_csv(file_path, sep=";")  # Use semicolon as the separator
+    elif file_name.endswith(".json"):
+        df = pd.read_json(file_path)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file format.")
     
-    df = pd.read_csv(file_path) if file_name.endswith(".csv") else pd.read_json(file_path)
     return {"columns": df.columns.tolist()}
 
 # Save selected input/output parameters

@@ -72,34 +72,63 @@ import os
 
 
 # Method 3: Calculating a new entry call CFP [kgC02/kWh]
-def process_data(input_file, output_file):
-    # Load the existing data from the JSON file
-    with open(input_file, 'r') as f:
-        data = json.load(f)
+# def process_data(input_file, output_file):
+#     # Load the existing data from the JSON file
+#     with open(input_file, 'r') as f:
+#         data = json.load(f)
     
-    # Check if the data is a list (not a dictionary)
-    if isinstance(data, list):
-        # Iterate over each item in the list
-        for item in data:
-            # Check if 'EnergyConsumed [kWh]' exists and calculate 'CFP [kgC02/kWh]'
-            if 'EnergyConsumed [kWh]' in item:
-                energy_consumed = item['EnergyConsumed [kWh]']
-                cfp_value = energy_consumed * 0.321
-                item['CFP [kgC02/kWh]'] = cfp_value  # Add new value with the correct key
-    else:
-        print("Error: The data is not in the expected format (list).")
-        return
+#     # Check if the data is a list (not a dictionary)
+#     if isinstance(data, list):
+#         # Iterate over each item in the list
+#         for item in data:
+#             # Check if 'EnergyConsumed [kWh]' exists and calculate 'CFP [kgC02/kWh]'
+#             if 'EnergyConsumed [kWh]' in item:
+#                 energy_consumed = item['EnergyConsumed [kWh]']
+#                 cfp_value = energy_consumed * 0.321
+#                 item['CFP [kgC02/kWh]'] = cfp_value  # Add new value with the correct key
+#     else:
+#         print("Error: The data is not in the expected format (list).")
+#         return
 
-    # Save the updated data with the new values into a new JSON file
-    with open(output_file, 'w') as f:
-        json.dump(data, f, indent=4)
-    print(f"Updated data saved to {output_file}")
+#     # Save the updated data with the new values into a new JSON file
+#     with open(output_file, 'w') as f:
+#         json.dump(data, f, indent=4)
+#     print(f"Updated data saved to {output_file}")
 
-# Main function
-def main():
-    input_file = 'combined4800.json'  # Replace with your input file path
-    output_file = 'modified4800.json'  # Replace with your desired output file path
-    process_data(input_file, output_file)
+# # Main function
+# def main():
+#     input_file = 'combined4800.json'  # Replace with your input file path
+#     output_file = 'modified4800.json'  # Replace with your desired output file path
+#     process_data(input_file, output_file)
+
+# if __name__ == "__main__":
+#     main()
+    
+    
+# Method 4: transposing a csv/json file
+def transpose_csv(input_file, output_file="transposed_file.csv"):
+    """
+    Reads a CSV file, transposes it while keeping the first column as headers, 
+    and saves the modified file.
+
+    :param input_file: Path to the input CSV file
+    :param output_file: Path to save the transposed CSV file
+    """
+    try:
+        # Load CSV file
+        df = pd.read_csv(input_file)
+
+        # Ensure the first column is used as the new header
+        df_transposed = df.set_index(df.columns[0]).T  # Set first column as index, then transpose
+
+        # Save the modified CSV
+        df_transposed.to_csv(output_file)
+
+        print(f"Transposed CSV saved as '{output_file}'.")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
-    main()
+    input_csv = "CAF_results_1-5000.csv"  # Replace with the actual CSV file path
+    transpose_csv(input_csv)
