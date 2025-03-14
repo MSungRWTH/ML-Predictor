@@ -78,7 +78,7 @@ class AutoMLRegressor:
             project_name=f'{self.project_name}_{tuner_type}', # Create a project folder based on tuner type
             directory=self.model_dir, # Save the trained model under model directory
             tuner=tuner_type,
-            max_trials=100,  # Maximum number of trials for AutoML
+            max_trials=1,  # Maximum number of trials for AutoML
             overwrite=True,
             loss='mean_absolute_error'  # Loss function to minimize
         )
@@ -86,7 +86,7 @@ class AutoMLRegressor:
         start_time = time.time()
 
         # Fit the regressor model with training data
-        regressor.fit(self.X_train, self.y_train, epochs=100, validation_split=0.1)  # Train with 100 epochs
+        regressor.fit(self.X_train, self.y_train, epochs=1, validation_split=0.1)  # Train with 100 epochs
         end_time = time.time()
 
         # Store the trained model and log the training time

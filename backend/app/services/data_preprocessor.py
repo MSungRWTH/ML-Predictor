@@ -5,6 +5,7 @@ import logging
 import pandas as pd
 import numpy as np
 import pickle
+from typing import Tuple
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from app.config import PROCESSED_DIRECTORY, UPLOAD_DIRECTORY
@@ -31,56 +32,55 @@ class DataPreprocessor:
         if not os.path.exists(self.file_path):
             raise FileNotFoundError("Dataset file not found.")
 
-        # Load the dataset (CSV or JSON)
-        self.data = pd.read_csv(self.file_path) if self.file_path.endswith(".csv") else pd.read_json(self.file_path)
-        
-
+        # Attempt to load the dataset with proper handling for the CSV file format
+        if file_name.endswith(".csv"):
+            # Load the CSV file with no header, and then set the first row as columns
+            self.data = pd.read_csv(self.file_path, delimiter=';', header=None)
+            # Set the first row as the header
+            self.data.columns = self.data.iloc[0]
+            # Drop the first row which is now the header
+            self.data = self.data.drop(0).reset_index(drop=True)
+        elif file_name.endswith(".json"):
+            self.data = pd.read_json(self.file_path)
+        else:
+            raise ValueError("Unsupported file format. Only CSV and JSON are supported.")
 
     def extract_data(self):
         """
-        Extract input and output data based on the specified parameters from the loaded JSON data.
+        Extract input and output data based on the specified parameters from the loaded dataset.
         """
         input_data = {param: [] for param in self.input_params}
         output_data = {param: [] for param in self.output_params}
-        ids = self.data[self.input_params[0]].keys()
 
-        for id_key in ids:
+        for index, row in self.data.iterrows():
             valid = True
             temp_input_data = {}
             temp_output_data = {}
 
             for param in self.input_params:
-                value = self.data[param].get(id_key)
-                if value is not None:
-                    temp_input_data[param] = value
+                if param in row:
+                    temp_input_data[param] = row[param]
                 else:
                     valid = False
-                    logging.warning("Missing input parameter '%s' for ID: %s", param, id_key)
+                    logging.warning("Missing input parameter '%s' at row: %d", param, index)
                     break
 
             if valid:
                 for param in self.output_params:
-                    if param == 'Throughput':
-                        throughput_value = self.data[param].get(id_key)
-                        if throughput_value is not None:
-                            try:
-                                temp_output_data[param] = ast.literal_eval(throughput_value)['Sink']
-                            except (ValueError, SyntaxError):
-                                valid = False
-                                logging.error("Invalid format for 'Throughput' at ID: %s", id_key)
-                                break
-                        else:
+                    if param == 'Throughput':  # Special handling for Throughput
+                        throughput_value = row[param]
+                        try:
+                            temp_output_data[param] = ast.literal_eval(throughput_value)['Sink']
+                        except (ValueError, SyntaxError):
                             valid = False
-                            logging.warning("Missing 'Throughput' parameter for ID: %s", id_key)
+                            logging.error(f"Invalid format for 'Throughput' in row {index}")
                             break
+                    elif param in row:
+                        temp_output_data[param] = row[param]
                     else:
-                        value = self.data[param].get(id_key)
-                        if value is not None:
-                            temp_output_data[param] = value
-                        else:
-                            valid = False
-                            logging.warning("Missing output parameter '%s' for ID: %s", param, id_key)
-                            break
+                        valid = False
+                        logging.warning(f"Missing output parameter '{param}' at row: {index}")
+                        break
 
             if valid:
                 for param in self.input_params:
@@ -90,6 +90,65 @@ class DataPreprocessor:
 
         logging.info("Extracted data with %d valid records.", len(input_data[self.input_params[0]]))
         return pd.DataFrame(input_data), pd.DataFrame(output_data)
+
+
+
+
+    
+    # def extract_data(self):
+    #     """
+    #     Extract input and output data based on the specified parameters from the loaded JSON data.
+    #     """
+    #     input_data = {param: [] for param in self.input_params}
+    #     output_data = {param: [] for param in self.output_params}
+    #     ids = self.data[self.input_params[0]].keys()
+
+    #     for id_key in ids:
+    #         valid = True
+    #         temp_input_data = {}
+    #         temp_output_data = {}
+
+    #         for param in self.input_params:
+    #             value = self.data[param].get(id_key)
+    #             if value is not None:
+    #                 temp_input_data[param] = value
+    #             else:
+    #                 valid = False
+    #                 logging.warning("Missing input parameter '%s' for ID: %s", param, id_key)
+    #                 break
+
+    #         if valid:
+    #             for param in self.output_params:
+    #                 if param == 'Throughput':
+    #                     throughput_value = self.data[param].get(id_key)
+    #                     if throughput_value is not None:
+    #                         try:
+    #                             temp_output_data[param] = ast.literal_eval(throughput_value)['Sink']
+    #                         except (ValueError, SyntaxError):
+    #                             valid = False
+    #                             logging.error("Invalid format for 'Throughput' at ID: %s", id_key)
+    #                             break
+    #                     else:
+    #                         valid = False
+    #                         logging.warning("Missing 'Throughput' parameter for ID: %s", id_key)
+    #                         break
+    #                 else:
+    #                     value = self.data[param].get(id_key)
+    #                     if value is not None:
+    #                         temp_output_data[param] = value
+    #                     else:
+    #                         valid = False
+    #                         logging.warning("Missing output parameter '%s' for ID: %s", param, id_key)
+    #                         break
+
+    #         if valid:
+    #             for param in self.input_params:
+    #                 input_data[param].append(temp_input_data[param])
+    #             for param in self.output_params:
+    #                 output_data[param].append(temp_output_data[param])
+
+    #     logging.info("Extracted data with %d valid records.", len(input_data[self.input_params[0]]))
+    #     return pd.DataFrame(input_data), pd.DataFrame(output_data)
 
     def clean_data(self, input_df, output_df):
         """
@@ -156,4 +215,3 @@ class DataPreprocessor:
         self.save_scalers(scaler_X, scaler_y)
 
         return {"message": "Preprocessing complete", "processed_data_preview": cleaned_data.head().to_dict()}
-
