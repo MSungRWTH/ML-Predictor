@@ -7,6 +7,8 @@ function Train() {
   const [inputParams, setInputParams] = useState([]);
   const [outputParams, setOutputParams] = useState([]);
   const [selectedTuner, setSelectedTuner] = useState("");  // Store selected tuner type
+  const [numberofTrials, setnumberofTrials] = useState(0);
+  const [numberofEpochs, setnumberofEpochs] = useState(0);
   const [loading, setLoading] = useState(false);
   const [trainingStatus, setTrainingStatus] = useState("");
 
@@ -47,7 +49,6 @@ function Train() {
     setSelectedTuner(e.target.value);
   };
 
-  // Start training models
   const handleTrainModel = async () => {
     if (!selectedProject) {
       alert("Please select a project.");
@@ -57,6 +58,12 @@ function Train() {
       alert("Please select a tuner type.");
       return;
     }
+    
+    // Check if numberofTrials and numberofEpochs are valid
+    if (numberofTrials <= 0 || numberofEpochs <= 0) {
+      alert("Please enter valid numbers for trials and epochs.");
+      return;
+    }
   
     setLoading(true);
     setTrainingStatus("Training in progress...");
@@ -64,7 +71,9 @@ function Train() {
     try {
       const response = await axios.post("http://localhost:8000/train/train", {
         project_name: selectedProject,
-        tuner: selectedTuner,  // Ensure the `tuner` value is correctly set
+        tuner: selectedTuner,
+        no_trials: parseInt(numberofTrials),  // Ensure it's a number
+        no_epochs: parseInt(numberofEpochs),  // Ensure it's a number
       });
       setTrainingStatus(response.data.message);
     } catch (error) {
@@ -74,7 +83,6 @@ function Train() {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="container mx-auto p-6 bg-gray-50 rounded-lg shadow-md">
@@ -105,6 +113,31 @@ function Train() {
           <p><strong>Output:</strong> {outputParams.join(", ") || "Not available"}</p>
         </div>
       )}
+
+      {/* Number of trials */}
+      <div>
+            <label className="block text-lg font-medium mb-2">Number of Trials</label>
+            <input
+              type="number"
+              placeholder="Number of Trials"
+              value={numberofTrials}
+              onChange={(e) => setnumberofTrials(e.target.value)}
+              className="block w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
+      {/* Number of epochs */}
+      <div>
+            <label className="block text-lg font-medium mb-2">Number of Epochs</label>
+            <input
+              type="number"
+              placeholder="Number of Epochs"
+              value={numberofEpochs}
+              onChange={(e) => setnumberofEpochs(e.target.value)}
+              className="block w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
 
       {/* Tuner Type Selection */}
       <div className="mb-4">

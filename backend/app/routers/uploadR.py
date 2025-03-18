@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List
-import os
 import json
 import pandas as pd
 from app.schemas.upload import PreprocessRequest
@@ -14,28 +13,28 @@ router = APIRouter()
 @router.post("/upload/")
 async def upload_file(file: UploadFile = File(...)):
     try:
-        # Save file to the UPLOAD_DIRECTORY
-        file_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
-        with open(file_path, "wb") as f:
+        file_path = UPLOAD_DIRECTORY / file.filename if file.filename is not None else UPLOAD_DIRECTORY / "file"
+        with file_path.open("wb") as f:
             contents = await file.read()
             f.write(contents)
         return {"message": "File uploaded successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error uploading file: {e!s}")
 
-# List available datasets in UPLOAD_DIRECTORY
-@router.get("/files/", response_model=List[str])
+
+@router.get("/files/", response_model=list[str])
 def list_datasets():
     try:
-        return [f for f in os.listdir(UPLOAD_DIRECTORY) if f.endswith(('.json', '.csv'))]
+        return [str(f.name) for f in UPLOAD_DIRECTORY.iterdir() if f.suffix in (".json", ".csv")]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Fetch column names from the selected file
 @router.get("/get_columns/")
 def get_columns(file_name: str):
-    file_path = os.path.join(UPLOAD_DIRECTORY, file_name)
-    
+    file_path = UPLOAD_DIRECTORY / file_name
+
     # Check if it's a CSV and set the correct delimiter
     if file_name.endswith(".csv"):
         df = pd.read_csv(file_path, sep=";")  # Use semicolon as the separator
@@ -43,37 +42,44 @@ def get_columns(file_name: str):
         df = pd.read_json(file_path)
     else:
         raise HTTPException(status_code=400, detail="Unsupported file format.")
-    
+
     return {"columns": df.columns.tolist()}
+
 
 # Save selected input/output parameters
 @router.post("/save_params/")
-async def save_params(request: PreprocessRequest):  # Accept the body as PreprocessRequest schema
+async def save_params(
+    request: PreprocessRequest,
+):  # Accept the body as PreprocessRequest schema
     try:
         # Define the directory where parameters will be saved
-        project_dir = os.path.join(PROCESSED_DIRECTORY, request.project_name)
-        
+        project_dir = PROCESSED_DIRECTORY / request.project_name
+
         # Create the directory if it doesn't exist
-        os.makedirs(project_dir, exist_ok=True)
+        if not project_dir.exists():
+            project_dir.mkdir(parents=True)
 
         # Prepare the parameters to be saved
         params = {
             "input_params": request.input_params,
             "output_params": request.output_params,
-            "file_name": request.file_name
+            "file_name": request.file_name,
         }
 
         # Save the parameters to a JSON file
-        params_file_path = os.path.join(project_dir, "params.json")
+        params_file_path = project_dir / "params.json"
         with open(params_file_path, "w") as f:
             json.dump(params, f)
-        
+
         # Return a success message
-        return {"message": "Parameters saved successfully.", "file_path": params_file_path}
-    
+        return {
+            "message": "Parameters saved successfully.",
+            "file_path": params_file_path,
+        }
+
     except Exception as e:
         # If an error occurs, return an error message
-        raise HTTPException(status_code=500, detail=f"Error saving parameters: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving parameters: {e!s}")
 
 
 # New: Call the DataPreprocessor class for preprocessing
@@ -93,7 +99,7 @@ async def preprocess_data(request: PreprocessRequest):
             scaler_type=request.scaler_type,  # Assuming scaler_type is part of PreprocessRequest schema
             input_params=request.input_params,
             output_params=request.output_params,
-            file_name=request.file_name
+            file_name=request.file_name,
         )
 
         # Call preprocess method from DataPreprocessor
@@ -103,14 +109,15 @@ async def preprocess_data(request: PreprocessRequest):
         print(f"Preprocessing result: {result}")
 
         return {"message": "Preprocessing successful", "data": result}
-    
+
     except HTTPException as http_error:
         # Catch HTTP exceptions and raise them with the appropriate status code
         raise http_error
     except Exception as e:
         # Log the exception to the console for debugging purposes
-        print(f"Error in preprocessing: {str(e)}")
+        print(f"Error in preprocessing: {e!s}")
 
         # Raise a 500 HTTPException with the error details
-        raise HTTPException(status_code=500, detail=f"Error in preprocessing: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error in preprocessing: {e!s}")
+
 

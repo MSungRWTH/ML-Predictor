@@ -1,17 +1,15 @@
-import os
+from pathlib import Path
 
-UPLOAD_DIRECTORY = "./app/datas/uploads/" # same as data directory
+ROOT_PATH = Path(__file__).parents[2]
 
-MODEL_DIRECTORY = "./app/models/"
+UPLOAD_DIRECTORY = ROOT_PATH / "backend" / "app" / "data" / "uploads"
+MODEL_DIRECTORY = ROOT_PATH / "backend" / "app" / "data" / "models"
+PROCESSED_DIRECTORY = ROOT_PATH / "backend" / "app" / "data" / "processed"
 
-PROCESSED_DIRECTORY = "./app/datas/processed/"
 
-
-os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
-
-os.makedirs(MODEL_DIRECTORY, exist_ok=True)
-
-os.makedirs(PROCESSED_DIRECTORY, exist_ok=True)
+for path in (UPLOAD_DIRECTORY, MODEL_DIRECTORY, PROCESSED_DIRECTORY):
+    if not path.exists():
+        path.mkdir(parents=True)
 
 
 
